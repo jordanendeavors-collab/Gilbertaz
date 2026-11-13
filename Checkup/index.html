@@ -63,6 +63,7 @@ label{display:block;font-size:14px;font-weight:700;color:var(--mute);margin:8px 
     <p id="resumeNote" class="note hide" style="margin-top:10px">Your earlier answers are saved on this device. <a href="#" onclick="startOver();return false">Start over</a></p>
     <p class="note" style="margin-top:10px">Private by design: your answers stay on this page unless you choose to send them. The optional website test contacts only the address you type. No file names, no customer data, no passwords.</p>
   </div>
+  <div class="card" id="consultBox" hidden><h2>Request a free consult</h2><p class="note">Tell us how to reach you. A person will contact you. Nothing is tested, scanned, or sent about your systems.</p><label>Your name</label><input id="c_name" autocomplete="name"><label>Business name</label><input id="c_biz" autocomplete="organization"><label>Best phone</label><input id="c_phone" autocomplete="tel" inputmode="tel"><label>Email (so we can reply)</label><input id="c_email" type="email" autocomplete="email" inputmode="email"><label>Best time to reach you</label><select id="c_time"><option>Any time</option><option>Morning</option><option>Afternoon</option><option>Evening</option></select><label>What would you like to talk about?</label><select id="c_topic"><option>Save money</option><option>Fix what's broken</option><option>Upgrade to better tools</option><option>All of the above</option></select><div style="position:absolute;left:-9999px;height:0;overflow:hidden" aria-hidden="true"><label>Leave this empty<input id="c_hp" tabindex="-1" autocomplete="off"></label></div><label class="note" style="display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-weight:400"><input type="checkbox" id="cConsent" style="width:auto;margin-top:3px"><span id="cConsentText"></span></label><button class="btn p big" id="cBtn" type="button" onclick="sendConsult()">Request my consult</button><div id="cMsg" role="status" aria-live="polite"></div></div>
   <!-- BHC-PS-CARD -->
   <div class="card" id="psBox">
     <h2>Free 30-second test: your phone and your website</h2>
@@ -120,7 +121,7 @@ label{display:block;font-size:14px;font-weight:700;color:var(--mute);margin:8px 
     <label>Best phone</label><input id="g_phone" autocomplete="tel" inputmode="tel"><label>Email (so we can reply)</label><input id="g_email" type="email" autocomplete="email" inputmode="email"><div style="position:absolute;left:-9999px;height:0;overflow:hidden" aria-hidden="true"><label>Leave this empty<input id="g_hp" tabindex="-1" autocomplete="off"></label></div>
     <label>What matters most?</label>
     <select id="g_want"><option>Save money</option><option>Fix what's broken</option><option>Upgrade to better tools</option><option>All of the above</option></select>
-    <div id="reqBox" hidden><button class="btn p big" style="margin-top:12px" id="reqBtn" type="button" onclick="sendRequest()">Send my request to Bridgehead</button><p class="note">Sending shares your name, business, contact details, every answer you gave, your phone and website results, anything from a deeper scan you loaded, and the website you came from. Nothing else.<span id="reqPrivacy"></span></p><details id="reqDet"><summary>See exactly what will be sent</summary><pre id="reqPre" style="white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto;font-size:.72rem;background:var(--soft);padding:10px;margin-top:8px"></pre></details><div id="reqMsg" role="status" aria-live="polite"></div></div>
+    <div id="reqBox" hidden><button class="btn p big" style="margin-top:12px" id="reqBtn" type="button" onclick="sendRequest()">Send my request to Bridgehead</button><label class="note" style="display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-weight:400"><input type="checkbox" id="reqConsent" style="width:auto;margin-top:3px"><span id="reqConsentText"></span></label><p class="note" id="reqNote"></p><details id="reqDet"><summary>See exactly what will be sent</summary><pre id="reqPre" style="white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto;font-size:.72rem;background:var(--soft);padding:10px;margin-top:8px"></pre></details><div id="reqMsg" role="status" aria-live="polite"></div></div>
     <button class="btn p big" style="margin-top:12px" onclick="sendIt()">Email me my full report</button>
     <p class="note">This opens your own email with your results filled in — you see exactly what's sent before you hit Send.</p>
     <div class="row"><button class="btn s" onclick="copyIt()">Copy my results instead</button><span class="note" id="copyMsg"></span></div>
@@ -351,9 +352,14 @@ BRIDGEHEAD
 /* ===== Owner settings — change these lines ===== */
 const OWNER_NAME = 'Wayne Jordan';
 const OWNER_EMAIL = 'bridgeheadlink@gmail.com';
-const SCAN_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyBEgcXWLphz0T3_HYjKScOVuvq1dKx935P4CRl3Ol8A-YUyrIVsCu-KNLZEyhVH6TK6g/exec';   /* the web app address from the Apps Script setup. Blank = email only. */
+const SCAN_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwSIBYW2NrjVgth6tiSDrGC6gOvTzn2vVtxLsbIs21TJn5G8Zshmb5jdOC4eqQSHlnrRQ/exec';   /* the web app address from the Apps Script setup. Blank = email only. */
 const SCAN_TOKEN = 'bh-bdae4202b41d2bdd0385';   /* must match TOKEN in the Apps Script */
-const PRIVACY_URL = '';   /* optional: address of your privacy notice */
+const REQUEST_MODE = 'consult';   /* 'minimal' sends contact details only. 'full' also sends answers, results, and scan. 'consult' is a contact form only, with no tests. */
+const NOTICE_REQUIRED = true;   /* true: the Send button stays closed until PRIVACY_URL is filled in */
+const PRIVACY_URL = '';   /* address of your privacy notice */
+const TERMS_URL = '';   /* address of your terms */
+const NOTICE_VERSION = 'draft-1';   /* recorded with each request. Change it when the notice or consent wording changes. */
+const CONSENT_TEXT = 'I agree that Bridgehead may store what I send here and contact me about my request, as described in the privacy notice and terms.';   /* DRAFT wording for your attorney to approve */
 /* =================================================== */
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -653,13 +659,15 @@ function psInit(){
  else{$('psPhoneAuto').textContent='You are on a computer. For the automatic checks (system version, browser), open this page on your phone too. You can answer the four questions below from here.'}
  psPhoneQs();if(PS.url)$('psUrl').value=PS.url;psSiteRes();psQuick();$('psRun').onclick=psRunSite;reqInit();$('psLink').classList.toggle('hide',PQ.some(q=>PS.ph[q.id]!=null)||!!PS.site)}
 /* BHC-PS-END */
-/* BHC-REQ-BEGIN: send the full request to the Drive collector */
+/* BHC-REQ-BEGIN: send a request to the Drive collector. Modes: minimal (default), full, consult. */
 let REQ_ID=null,SENDING=false;
 function cap(a,n){return (a||[]).slice(0,n||400).map(x=>String(x).slice(0,120))}
-function reqPayload(id,n){const R=window._R||results(),g=grade(R.score),s=PS.site;
- return{token:SCAN_TOKEN,requestId:id,sentAt:new Date().toISOString(),site:location.hostname,page:location.pathname,
-  contact:{name:$('g_name').value.trim(),business:$('g_biz').value.trim(),phone:$('g_phone').value.trim(),email:$('g_email').value.trim(),wants:$('g_want').value},
-  answers:QS.map(q=>({id:q.id,question:q.t,answer:A[q.id]==null?'':q.o[A[q.id]][0]})),
+function noticeOk(){return !NOTICE_REQUIRED||!!PRIVACY_URL}
+function consentHtml(){const p=PRIVACY_URL?'<a href="'+esc(PRIVACY_URL)+'" target="_blank" rel="noopener">privacy notice</a>':'privacy notice',t=TERMS_URL?'<a href="'+esc(TERMS_URL)+'" target="_blank" rel="noopener">terms</a>':'terms';return esc(CONSENT_TEXT).replace('privacy notice',p).replace('terms',t)}
+function consentRec(){return{accepted:true,text:CONSENT_TEXT,version:NOTICE_VERSION,at:new Date().toISOString()}}
+function reqId(){return REQ_ID||(REQ_ID='r'+Date.now().toString(36)+Math.random().toString(36).slice(2,10))}
+function fullPart(n){const R=window._R||results(),g=grade(R.score),s=PS.site;
+ return{answers:QS.map(q=>({id:q.id,question:q.t,answer:A[q.id]==null?'':q.o[A[q.id]][0]})),
   phoneChecks:PQ.map(q=>({id:q.id,question:q.t,answer:PS.ph[q.id]==null?'':PYN[PS.ph[q.id]]})),
   website:s?{host:s.host,httpsLoads:!!s.a,wwwLoads:s.w==null?null:!!s.w,responseMs:s.ms==null?null:s.ms,testedAt:s.at?new Date(s.at).toISOString():null}:null,
   device:{os:DEV.os||'',browser:DEV.br||'',browserOld:!!DEV.brOld,memoryGB:DEV.ram||null,cores:DEV.cores||null,network:DEV.net||'',mobile:!!DEV.mobile},
@@ -669,31 +677,57 @@ function reqPayload(id,n){const R=window._R||results(),g=grade(R.score),s=PS.sit
    issues:R.F.map(f=>({severity:f.sev,title:f.t,fix:f.fix}))},
   scan:{installedApps:cap(SYS.apps,n),runningProcesses:cap(SYS.procs,n),startupItems:cap(SYS.start,n),fileTypes:SYS.exts||{},extensions:cap(SYS.extn,n),editorExtensions:cap(SYS.vsx,n),aiApps:cap(SYS.aios,n)},
   code:code(R)}}
+function reqPayload(id,n){
+ const base={token:SCAN_TOKEN,requestId:id,sentAt:new Date().toISOString(),site:location.hostname,page:location.pathname,mode:REQUEST_MODE,consent:consentRec(),
+  contact:{name:$('g_name').value.trim(),business:$('g_biz').value.trim(),phone:$('g_phone').value.trim(),email:$('g_email').value.trim(),wants:$('g_want').value}};
+ return REQUEST_MODE==='full'?Object.assign(base,fullPart(n)):base}
 function reqBody(id){let n=400,b;do{b=JSON.stringify(reqPayload(id,n));n=Math.floor(n/2)}while(b.length>140000&&n>5);return b}
-function reqId(){return REQ_ID||(REQ_ID='r'+Date.now().toString(36)+Math.random().toString(36).slice(2,10))}
-function reqCheck(){const b=$('g_biz').value.trim(),p=$('g_phone').value.trim(),e=$('g_email').value.trim();
+function consultPayload(id){return{token:SCAN_TOKEN,requestId:id,sentAt:new Date().toISOString(),site:location.hostname,page:location.pathname,mode:'consult',consent:consentRec(),
+ contact:{name:$('c_name').value.trim(),business:$('c_biz').value.trim(),phone:$('c_phone').value.trim(),email:$('c_email').value.trim(),wants:$('c_topic').value,bestTime:$('c_time').value}}}
+function checkContact(b,p,e,consentId){
  if(!b)return 'Add your business name so we know who it is for.';if(!p&&!e)return 'Add a phone number or an email so we can reach you.';
- if(e&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))return 'That email address does not look right.';return ''}
+ if(e&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))return 'That email address does not look right.';
+ if(!$(consentId).checked)return 'Please tick the box to agree before sending.';return ''}
+function postReq(body){const c=new AbortController(),t=setTimeout(()=>c.abort(),30000);
+ return fetch(SCAN_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body,redirect:'follow',signal:c.signal})
+  .then(r=>{clearTimeout(t);if(!r.ok)throw new Error('http');return r.json()})
+  .then(j=>{if(!j||!j.ok)throw new Error(j&&j.error||'failed');return j.ref})
+  .catch(e=>{clearTimeout(t);throw e})}
+function failText(code){return code==='busy'?'Many requests are coming in at once. Please try again in a minute.':code==='bad email'?'That email address does not look right.':code==='consent missing'?'Please tick the box to agree before sending.':'We could not send your request just now.'}
+function okCard(ref,who,hideId,beforeId){const old=$('reqOk');if(old)old.remove();const c=document.createElement('div');c.className='card';c.id='reqOk';c.setAttribute('role','status');
+ c.innerHTML='<h2>Request received</h2><p>Thank you. Your request is in. Your reference is <b>'+esc(ref)+'</b>. We will be in touch at '+esc(who)+'.</p><p class="note">Nothing more is sent.</p><p class="note"><a href="#" onclick="startOver();return false">Start over</a></p>';
+ $(beforeId).parentNode.insertBefore(c,$(beforeId));$(hideId).classList.add('hide');c.scrollIntoView&&c.scrollIntoView({block:'center'})}
 function reqPreview(){if(!$('reqDet').open)return;const o=JSON.parse(reqBody(reqId()));o.token='(hidden)';$('reqPre').textContent=JSON.stringify(o,null,1)}
 function reqMsg(h){$('reqMsg').innerHTML=h}
-function reqDone(ref){const who=$('g_email').value.trim()||$('g_phone').value.trim();
- const old=$('reqOk');if(old)old.remove();const c=document.createElement('div');c.className='card';c.id='reqOk';c.setAttribute('role','status');
- c.innerHTML='<h2>Request received</h2><p>Thank you. Your request is in. Your reference is <b>'+esc(ref)+'</b>. We will be in touch at '+esc(who)+'.</p><p class="note">Your answers are still on this page. Nothing more is sent.</p><p class="note"><a href="#" onclick="startOver();return false">Start over</a></p>';
- $('gate').parentNode.insertBefore(c,$('gate'));$('gate').classList.add('hide');c.scrollIntoView&&c.scrollIntoView({block:'center'})}
-function reqFail(code){SENDING=false;$('reqBtn').disabled=false;
- const t=code==='busy'?'Many requests are coming in at once. Please try again in a minute.':code==='bad email'?'That email address does not look right.':'We could not send your request just now.';
- reqMsg('<p class="note" style="color:var(--bad)">'+esc(t)+' You can try again, or use <b>Email me my full report</b> below.</p>')}
-function sendRequest(){if(SENDING)return;const err=reqCheck();if(err){reqMsg('<p class="note" style="color:var(--bad)">'+esc(err)+'</p>');return}
- if($('g_hp').value){reqDone('BH-000000');return}
+function sendRequest(){if(SENDING)return;const err=checkContact($('g_biz').value.trim(),$('g_phone').value.trim(),$('g_email').value.trim(),'reqConsent');
+ if(err){reqMsg('<p class="note" style="color:var(--bad)">'+esc(err)+'</p>');return}
+ if($('g_hp').value){okCard('BH-000000','',"gate","gate");return}
  SENDING=true;$('reqBtn').disabled=true;reqMsg('<p class="note">Sending…</p>');
- const c=new AbortController(),t=setTimeout(()=>c.abort(),30000);
- fetch(SCAN_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:reqBody(reqId()),redirect:'follow',signal:c.signal})
-  .then(r=>{clearTimeout(t);if(!r.ok)throw new Error('http');return r.json()})
-  .then(j=>{if(!j||!j.ok)throw new Error(j&&j.error||'failed');reqDone(j.ref)})
-  .catch(e=>{clearTimeout(t);reqFail(e&&e.message)})}
-function reqInit(){if(!SCAN_ENDPOINT)return;$('reqBox').hidden=false;
+ postReq(reqBody(reqId())).then(ref=>okCard(ref,$('g_email').value.trim()||$('g_phone').value.trim(),'gate','gate'))
+  .catch(e=>{SENDING=false;$('reqBtn').disabled=false;reqMsg('<p class="note" style="color:var(--bad)">'+esc(failText(e&&e.message))+' You can try again, or use <b>Email me my full report</b> below.</p>')})}
+function sendConsult(){if(SENDING)return;const m=h=>{$('cMsg').innerHTML=h};
+ const err=checkContact($('c_biz').value.trim(),$('c_phone').value.trim(),$('c_email').value.trim(),'cConsent');
+ if(err){m('<p class="note" style="color:var(--bad)">'+esc(err)+'</p>');return}
+ if($('c_hp').value){okCard('BH-000000','','consultBox','consultBox');return}
+ SENDING=true;$('cBtn').disabled=true;m('<p class="note">Sending…</p>');
+ postReq(JSON.stringify(consultPayload(reqId()))).then(ref=>okCard(ref,$('c_email').value.trim()||$('c_phone').value.trim(),'consultBox','consultBox'))
+  .catch(e=>{SENDING=false;$('cBtn').disabled=false;m('<p class="note" style="color:var(--bad)">'+esc(failText(e&&e.message))+' You can try again.</p>')})}
+function reqInit(){
+ if(REQUEST_MODE==='consult'){
+  document.querySelectorAll('#v-start .hero button,#resumeNote,#psBox,#psLink').forEach(e=>e.classList.add('hide'));
+  document.title='Bridgehead · Request a free consult';const sm=document.querySelector('header small');if(sm)sm.textContent='Free consult';
+  const h=document.querySelector('#v-start .hero');h.querySelector('h1').textContent='Talk to a person about your business systems.';
+  h.querySelector('p').textContent='Request a free consult. Nothing is tested, scanned, or sent about your systems. A person will contact you.';
+  const note=h.querySelector('p.note:last-of-type');if(note)note.textContent='Your details are sent only when you press Request my consult.';
+  $('consultBox').hidden=false;
+  if(!SCAN_ENDPOINT||!noticeOk()){$('consultBox').innerHTML='<h2>Request a free consult</h2><p>Online requests open once our privacy notice is posted. For now, email us at <a href="mailto:'+esc(OWNER_EMAIL)+'">'+esc(OWNER_EMAIL)+'</a>.</p>';return}
+  $('cConsentText').innerHTML=consentHtml();return}
+ if(!SCAN_ENDPOINT)return;
+ $('reqBox').hidden=false;
+ if(!noticeOk()){$('reqBox').innerHTML='<p class="note">Online requests open once our privacy notice is posted. For now, use the email button below.</p>';return}
+ $('reqNote').innerHTML=(REQUEST_MODE==='full'?'Sending shares your name, business, contact details, every answer you gave, your phone and website results, anything from a deeper scan you loaded, and the website you came from. Nothing else.':'Sending shares your name, business, contact details, and the website you came from. It does not send your answers, results, or scan.')+'<span id="reqPrivacy"></span>';
+ $('reqConsentText').innerHTML=consentHtml();
  const b=document.querySelector('#gate button[onclick="sendIt()"]');if(b){b.className='btn s';b.style.marginTop='8px';b.textContent='Or email me my full report'}
- if(PRIVACY_URL){$('reqPrivacy').innerHTML=' <a href="'+esc(PRIVACY_URL)+'" target="_blank" rel="noopener">Privacy notice</a>'}
  $('reqDet').addEventListener('toggle',reqPreview);['g_name','g_biz','g_phone','g_email','g_want'].forEach(i=>$(i).addEventListener('input',reqPreview))}
 /* BHC-REQ-END */
 
@@ -713,7 +747,7 @@ function go(n){['v-start','v-q','v-res'].forEach((v,i)=>$(v).classList.toggle('h
  if(n===2){const miss=scored().filter(q=>A[q.id]==null).length;if(miss>3){$('v-res').classList.add('hide');$('v-q').classList.remove('hide');$('needMore').textContent='Answer at least '+(scored().length-3)+' questions for a useful score ('+miss+' left).';return}renderRes()}
  window.scrollTo(0,0)}
 function startOver(){if(!confirm('Clear all answers and scan results from this device?'))return;try{localStorage.removeItem('bhc_answers');localStorage.removeItem('bhc_sys');localStorage.removeItem('bhc_ps')}catch(e){}
- A={};PS={ph:{},url:'',site:null};REQ_ID=null;SENDING=false;(function(){const o=$('reqOk');if(o)o.remove();$('gate').classList.remove('hide');$('reqBtn').disabled=false;$('reqMsg').innerHTML=''})();SYS={apps:[],procs:[],os:[],exts:{},ids:[],secs:[],extn:[],start:[],vsx:[],aios:[]};['g_name','g_biz','g_phone'].forEach(id=>$(id).value='');$('deepMsg').textContent='';renderQs();psInit();$('resumeNote').classList.add('hide');go(0)}
+ A={};PS={ph:{},url:'',site:null};REQ_ID=null;SENDING=false;(function(){const o=$('reqOk');if(o)o.remove();$('gate').classList.remove('hide');$('consultBox').classList.remove('hide');$('reqBtn').disabled=false;$('cBtn').disabled=false;$('reqMsg').innerHTML='';$('cMsg').innerHTML=''})();SYS={apps:[],procs:[],os:[],exts:{},ids:[],secs:[],extn:[],start:[],vsx:[],aios:[]};['g_name','g_biz','g_phone'].forEach(id=>$(id).value='');$('deepMsg').textContent='';renderQs();psInit();$('resumeNote').classList.add('hide');go(0)}
 if(Object.keys(A).length||SYS.ids.length)$('resumeNote').classList.remove('hide');
 renderQs();devCheck().then(psInit);
 </script>
