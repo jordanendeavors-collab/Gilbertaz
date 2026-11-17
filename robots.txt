@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /checkup/
+
+Sitemap: https://www.azgilbertwatch.com/sitemap.xml
